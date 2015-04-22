@@ -16,6 +16,7 @@ public class Main {
     // Base URI the Grizzly HTTP server will listen on
     public static final String BASE_URI = "http://localhost:8080/myapp/";
 
+    public static final String DB_URL = "jdbc:mysql://162.243.153.67:3306/PhotoHangout";
     /**
      * Starts Grizzly HTTP server exposing JAX-RS resources defined in this application.
      * @return Grizzly HTTP server.
@@ -25,7 +26,7 @@ public class Main {
         // in com.server package
         final ResourceConfig rc = new ResourceConfig().packages("com.server");
         rc.register(JacksonFeature.class);
-
+        Database db = new Database(DB_URL, "scriptor", "obsecure");
         // create and start a new instance of grizzly http server
         // exposing the Jersey application at BASE_URI
         return GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), rc);
