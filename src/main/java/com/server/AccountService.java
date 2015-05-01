@@ -13,7 +13,7 @@ import com.server.Account;
 /**
  * Root resource (exposed at "myresource" path)
  */
-@Path("account")
+@Path("/account")
 public class AccountService {	
 	@GET
     @Consumes(MediaType.APPLICATION_JSON)
