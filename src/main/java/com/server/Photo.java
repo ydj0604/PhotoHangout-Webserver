@@ -10,35 +10,35 @@ public class Photo implements Serializable {
 	/**
 	 * 
 	 */
-	private String photoId;
-	private String path;
+	private String PhotoId;
+	private String Location; //path
 
 	public Photo() {}
 	
-	public Photo(String id, String p) {
-		photoId = id;
-		path = p;
+	public Photo(String id, String l) {
+		PhotoId = id;
+		Location = l;
 	}
 	
 	public void setPhotoId(String id) {
-		photoId = id;
+		PhotoId = id;
 	}
 	
 	public String getPhotoId() {
-		return photoId;
+		return PhotoId;
 	}
 	
-	public void setPath(String p) {
-		path = p;
+	public void setLocation(String l) {
+		Location = l;
 	}
 	
-	public String getPassword() {
-		return path;
+	public String getLocation() {
+		return Location;
 	}
 	
 	@Override
 	public String toString() {
-		return "Account [photoId=" + photoId + ", path=" + path + "]";
+		return "Account [photoId=" + PhotoId + ", location=" + Location + "]";
 	}
 }
 

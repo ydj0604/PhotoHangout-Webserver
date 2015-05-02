@@ -14,16 +14,19 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
-@Path("/photo")
+@Path("/photos")
 public class PhotoService {
 	
 	@GET
 	@Path("/{username}/{photo_id}")
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
     public Response getPhoto(@PathParam("username") String username, @PathParam("photo_id") String photo_id) {
+		System.out.println(username);
+		System.out.println(photo_id);
+		
 		//TODO: verify user session
 		
-		String photo_path = null; //TODO: get path from photo table
+		//String photo_path = null; //TODO: get path from photo table
 
 	    StreamingOutput stream = new StreamingOutput() {
 	        @Override
@@ -39,25 +42,18 @@ public class PhotoService {
 	    return Response.ok(stream, "image/png") //TODO: set content-type of your file
 	            .header("content-disposition", "attachment; filename = "+ photo_id)
 	            .build();
-	    
-	
-	    /* 
-	    	alternative 
-		    response.setContentType("image/png");
-		    response.setHeader("Content-Disposition", "attachment; filename=" + fileName);
-		    TODO: write file content to response.getOutputStream();
-		    response.getOutputStream().close();
-		    return response; 
-	     */
     }
 
 	@GET
 	@Path("/{username}/photo-ids")
 	@Produces("application/json")
     public Response getPhotosIds(@PathParam("username") String username) {
+		System.out.println(username);
+		
 		//TODO: verify user session
 		//TODO: get photo ids of user by scanning photo user-to-photo table
 		//TODO: return a json array of photo json objects
+		
 		return Response.status(200).build(); 		
 	}
 	
@@ -65,13 +61,14 @@ public class PhotoService {
     @Path("/{username}")
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response uploadPhoto(@PathParam("username") String username, InputStream stream) {
+    public Response uploadPhoto(@PathParam("username") String username, InputStream istream) {    	
     	//TODO: verify user session
     	//TODO: update user-to-photo table, photo table
     	
-    	String photo_path = null; //get path to store the photo
+    	//String photo_path = null; //get path to store the photo
     	//TODO: write file to photo_path
     	
+    	//TODO: photoId is assigned and returned to client
     	return Response.status(200).build();
     }
 }

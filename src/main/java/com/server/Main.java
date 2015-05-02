@@ -26,7 +26,7 @@ public class Main {
         // in com.server package
         final ResourceConfig rc = new ResourceConfig().packages("com.server");
         rc.register(JacksonFeature.class);
-        Database db = new Database(DB_URL, "scriptor", "obsecure");
+        //Database db = new Database(DB_URL, "scriptor", "obsecure");
         // create and start a new instance of grizzly http server
         // exposing the Jersey application at BASE_URI
         return GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), rc);

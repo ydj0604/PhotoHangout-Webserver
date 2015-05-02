@@ -7,35 +7,45 @@ public class Account implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = -7274641432240904912L;
-	private String username;
-	private String password;
+	private String Username;
+	private String Password;
+	private String Token; //to verify the current user
 
 	public Account() {}
 	
 	public Account(String u, String p) {
-		username = u;
-		password = p;
+		Username = u;
+		Password = p;
 	}
 	
 	public void setUsername(String u) {
-		username = u;
+		Username = u;
 	}
 	
 	public String getUsername() {
-		return username;
+		return Username;
 	}
 	
 	public void setPassword(String p) {
-		password = p;
+		Password = p;
 	}
 	
 	public String getPassword() {
-		return password;
+		return Password;
+	}
+	
+	public void setToken(String t) {
+		Token = t;
+	}
+	
+	
+	public String getToken() { 
+		return Token;
 	}
 	
 	@Override
 	public String toString() {
-		return "Account [username=" + username + ", password=" + password + "]";
+		return "Account [username=" + Username + ", password=" + Password + ", token=" + Token + "]";
 	}
 }
 
