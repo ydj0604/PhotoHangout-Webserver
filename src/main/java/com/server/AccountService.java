@@ -16,12 +16,7 @@ import com.server.Account;
  * Root resource (exposed at "myresource" path)
  */
 @Path("/accounts")
-public class AccountService {
-	Database db;
-	
-	public AccountService() {
-		db = Database.getInstance();
-	}
+public class AccountService extends ServiceWrapper {
 	
 	@POST
 	@Path("/login")

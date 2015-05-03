@@ -1,8 +1,8 @@
 package com.server;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -12,47 +12,52 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.StreamingOutput;
+
 
 @Path("/photos")
-public class PhotoService {
+public class PhotoService extends ServiceWrapper {
 	
 	@GET
-	@Path("/{username}/{photo_id}")
+	@Path("/{user_id}/{photo_id}")
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public Response getPhoto(@PathParam("username") String username, @PathParam("photo_id") String photo_id) {
-		System.out.println(username);
-		System.out.println(photo_id);
+    public Response getPhoto(@PathParam("username") String user_id, @PathParam("photo_id") String photo_id) {
+		String photo_path = null;
+		
+		String sqlQuery = String.format(
+				"SELECT COUNT(*), location from Photo where id = "
+				+ "(SELECT photo_id FROM PhotoHangout.UserToPhoto WHERE user_id = %s AND photo_id = %s);"
+				,user_id, photo_id);
+		ResultSet rs = null;
+		
+		try {
+			rs = db.runSql(sqlQuery);
+			if(rs.next() && rs.getString("COUNT(*)").equals("1")) {
+				photo_path = rs.getString("location");
+				System.out.printf("Verified user %s has access to photo %s at location: %s\n", user_id, photo_id, photo_path);
+			} else {
+				System.out.printf("Denied user %s has access to photo %s at location: %s\n", user_id, photo_id, photo_path);
+				return Response.status(403).build();
+			}
+		} catch (SQLException e) {
+			return Response.status(403).build();
+		}
 		
 		//TODO: verify user session
-		
-		//String photo_path = null; //TODO: get path from photo table
-
-	    StreamingOutput stream = new StreamingOutput() {
-	        @Override
-	        public void write(OutputStream output) throws IOException {
-	          try {
-	            // TODO: write file content to output with photo_path
-	          } catch (Exception e) {
-	             e.printStackTrace();
-	          }
-	        }
-	      };
-		
+		PhotoStream stream = new PhotoStream(photo_path);
+	    
 	    return Response.ok(stream, "image/png") //TODO: set content-type of your file
 	            .header("content-disposition", "attachment; filename = "+ photo_id)
 	            .build();
     }
 
 	@GET
-	@Path("/{username}/photo-ids")
+	@Path("/{user_id}/photo-ids")
 	@Produces("application/json")
     public Response getPhotosIds(@PathParam("username") String username) {
 		System.out.println(username);
 		//TODO: verify user session
 		//TODO: get photo ids of user by scanning photo user-to-photo table
 		//TODO: return a json array of photo json objects
-		
 		return Response.status(200).build(); 		
 	}
 	
