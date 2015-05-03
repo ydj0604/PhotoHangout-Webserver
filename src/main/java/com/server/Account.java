@@ -9,6 +9,7 @@ public class Account implements Serializable {
 	private static final long serialVersionUID = -7274641432240904912L;
 	private String Username;
 	private String Password;
+	private String Email;
 	private String Token; //to verify the current user
 
 	public Account() {}
@@ -37,7 +38,14 @@ public class Account implements Serializable {
 	public void setToken(String t) {
 		Token = t;
 	}
+
+	public String getEmail() {
+		return Email;
+	}
 	
+	public void setEmail(String e) {
+		Email = e;
+	}
 	
 	public String getToken() { 
 		return Token;
@@ -45,7 +53,7 @@ public class Account implements Serializable {
 	
 	@Override
 	public String toString() {
-		return "Account [username=" + Username + ", password=" + Password + ", token=" + Token + "]";
+		return "Account [username=" + Username + ", password=" + Password + ", token=" + Token + ", email=" + Email + "]";
 	}
 }
 

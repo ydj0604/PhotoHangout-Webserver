@@ -49,7 +49,6 @@ public class PhotoService {
 	@Produces("application/json")
     public Response getPhotosIds(@PathParam("username") String username) {
 		System.out.println(username);
-		
 		//TODO: verify user session
 		//TODO: get photo ids of user by scanning photo user-to-photo table
 		//TODO: return a json array of photo json objects
