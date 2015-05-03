@@ -8,17 +8,16 @@ public class Session implements Serializable {
 	 */
 	private static final long serialVersionUID = -1703610865463811284L;
 	private String SessionId;
-	private String Owner;
+	private String OwnerId;
 	private String PhotoId;
-	private Integer Expired; //1 means expired; 0 means not expired
+	private String ExpireTime;
 
 	public Session() {}
 	
-	public Session(String s, String o, String p, Integer e) {
+	public Session(String s, String o, String p) {
 		SessionId = s;
-		Owner = o;
+		OwnerId = o;
 		PhotoId = p;
-		Expired = e;
 	}
 	
 	public void setSessionId(String s) {
@@ -29,12 +28,12 @@ public class Session implements Serializable {
 		return SessionId;
 	}
 	
-	public void setOwner(String o) {
-		Owner = o;
+	public void setOwnerId(String o) {
+		OwnerId = o;
 	}
 	
-	public String getOwner() {
-		return Owner;
+	public String getOwnerId() {
+		return OwnerId;
 	}
 	
 	public void setPhotoId(String p) {
@@ -45,17 +44,17 @@ public class Session implements Serializable {
 		return PhotoId;
 	}
 	
-	public void setExpired(Integer e) {
-		Expired = e;
+	public void setExpireTime(String e) {
+		ExpireTime = e;
 	}
 	
-	public Integer getExpired() {
-		return Expired;
+	public String getExpireTime() {
+		return ExpireTime;
 	}
 	
 	@Override
 	public String toString() {
-		return "Session [sessionId=" + SessionId + ", owner=" + Owner + ", photoId=" + PhotoId + ", expired=" + Expired.toString() + "]";
+		return "Session [sessionId=" + SessionId + ", owner=" + OwnerId + ", photoId=" + PhotoId + ", expired=" + ExpireTime + "]";
 	}
 }
 
