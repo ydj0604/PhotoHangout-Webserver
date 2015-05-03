@@ -9,7 +9,7 @@ public class Invitation implements Serializable {
 	private static final long serialVersionUID = 2518190102665499448L;
 	private String InvitationId;
 	private String SessionId;
-	private String Receiver;
+	private String ReceiverId;
 	private Integer Accepted;
 	private Integer Expired;
 
@@ -18,7 +18,7 @@ public class Invitation implements Serializable {
 	public Invitation(String i, String s, String r, Integer a, Integer e) {
 		InvitationId = i;
 		SessionId = s;
-		Receiver = r;
+		ReceiverId = r;
 		Accepted = a;
 		Expired = e;
 	}
@@ -39,12 +39,12 @@ public class Invitation implements Serializable {
 		return SessionId;
 	}
 	
-	public void setReceiver(String r) {
-		Receiver = r;
+	public void setReceiverId(String r) {
+		ReceiverId = r;
 	}
 	
-	public String getReceiver() { 
-		return Receiver;
+	public String getReceiverId() { 
+		return ReceiverId;
 	}
 	
 	public void setAccepted(Integer a) {
@@ -66,7 +66,7 @@ public class Invitation implements Serializable {
 	@Override
 	public String toString() {
 		return "Invitation [invitationId=" + InvitationId + ", sessionId=" + SessionId
-				+ ", receiver=" + Receiver + ", accepted=" + Accepted.toString() + ", expired=" + Expired.toString() + "]";
+				+ ", receiver=" + ReceiverId + ", accepted=" + Accepted.toString() + ", expired=" + Expired.toString() + "]";
 	}
 }
 
