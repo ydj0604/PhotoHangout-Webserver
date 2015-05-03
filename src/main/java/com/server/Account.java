@@ -11,6 +11,7 @@ public class Account implements Serializable {
 	private String Password;
 	private String Email;
 	private String Token; //to verify the current user
+	private String UserId;
 
 	public Account() {}
 	
@@ -49,6 +50,14 @@ public class Account implements Serializable {
 	
 	public String getToken() { 
 		return Token;
+	}
+	
+	public void setUserId(String i) {
+		UserId = i;
+	}
+	
+	public String getUserId() { 
+		return UserId;
 	}
 	
 	@Override

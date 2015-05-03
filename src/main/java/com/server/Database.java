@@ -49,8 +49,10 @@ public class Database {
     	PreparedStatement statement = (PreparedStatement) conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
     	statement.executeUpdate();
     	ResultSet rs = statement.getGeneratedKeys();
-    	rs.next();
-    	return rs.getLong(1);
+    	if(rs.next())
+    		return rs.getLong(1);
+    	else
+    		return null;
     }
     
     public Long executeSqlWithTimestamp(String sql) throws SQLException { //need to mark timestamp field with ?
