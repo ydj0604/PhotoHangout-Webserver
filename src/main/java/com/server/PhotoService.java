@@ -13,59 +13,94 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+
+import com.sun.jersey.multipart.FormDataParam;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 
 @Path("/photos")
 public class PhotoService extends ServiceWrapper {
 	
 	@GET
 	@Path("/{user_id}/{photo_id}")
-	@Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public Response getPhoto(@PathParam("username") String user_id, @PathParam("photo_id") String photo_id) {
+	@Produces(MediaType.APPLICATION_JSON)
+    public Photo getPhoto(@PathParam("user_id") String user_id, @PathParam("photo_id") String photo_id) {
+		//TODO: verify user session
+		Photo resp = null;
 		String photo_path = null;
-		
+
 		String sqlQuery = String.format(
-				"SELECT COUNT(*), location from Photo where id = "
-				+ "(SELECT photo_id FROM PhotoHangout.UserToPhoto WHERE user_id = %s AND photo_id = %s);"
+				"SELECT location from Photo WHERE id = (SELECT photo_id FROM UserToPhoto WHERE user_id = '%s' AND photo_id = '%s');"
 				,user_id, photo_id);
 		ResultSet rs = null;
-		
 		try {
 			rs = db.runSql(sqlQuery);
-			if(rs.next() && rs.getString("COUNT(*)").equals("1")) {
+			if(rs.next()) {
 				photo_path = rs.getString("location");
+				resp = new Photo(photo_id, photo_path);
 				System.out.printf("Verified user %s has access to photo %s at location: %s\n", user_id, photo_id, photo_path);
 			} else {
 				System.out.printf("Denied user %s has access to photo %s at location: %s\n", user_id, photo_id, photo_path);
-				return Response.status(403).build();
 			}
 		} catch (SQLException e) {
-			return Response.status(403).build();
+			e.printStackTrace();
 		}
-		
-		//TODO: verify user session
-		PhotoStream stream = new PhotoStream(photo_path);
-	    
-	    return Response.ok(stream, "image/png") //TODO: set content-type of your file
-	            .header("content-disposition", "attachment; filename = "+ photo_id)
-	            .build();
+		return resp;
     }
 
 	@GET
 	@Path("/{user_id}/photo-ids")
 	@Produces("application/json")
-    public Response getPhotosIds(@PathParam("username") String username) {
-		System.out.println(username);
+    public String getPhotosIds(@PathParam("user_id") String user_id) {
+		System.out.println(user_id);
 		//TODO: verify user session
 		//TODO: get photo ids of user by scanning photo user-to-photo table
 		//TODO: return a json array of photo json objects
-		return Response.status(200).build(); 		
+		
+		String sqlQuery = String.format(
+				"SELECT id, location from Photo WHERE id = (SELECT photo_id FROM UserToPhoto WHERE user_id = '%s');"
+				,user_id);
+		ResultSet rs = null;
+		String photo_id = null;
+		String photo_path = null;
+		JSONObject jo = new JSONObject();
+
+		try {
+			rs = db.runSql(sqlQuery);
+			while(rs.next()) {
+				photo_id = rs.getString("id");
+				photo_path = rs.getString("location");
+				jo.put(photo_id, photo_path);
+				System.out.printf("Verified user %s has access to photo %s at location: %s\n", user_id, photo_id, photo_path);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return jo.toString();
 	}
 	
+//	private static final String SERVER_UPLOAD_LOCATION_FOLDER = "C:/Users/JingyuLiu/Desktop/xkito/";
+	
     @POST
-    @Path("/{username}")
-    @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+    @Path("/{username}/{fileName}")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response uploadPhoto(@PathParam("username") String username, InputStream istream) {    	
+    public Response uploadPhoto(@PathParam("fileName") final String fileName,
+    		   @FormDataParam("content") final InputStream uploadedInputStream) {
+    	
+        String uploadedFileLocation = SERVER_UPLOAD_LOCATION_FOLDER + fileName;
+        // save it
+        try {
+            writeToFile(uploadedInputStream, uploadedFileLocation);
+        } catch(Exception e) {
+    		return Response.status(403).build(); 		
+        }
+		return Response.status(200).build(); 		
+        
     	//TODO: verify user session
     	//TODO: update user-to-photo table, photo table
     	
@@ -73,6 +108,21 @@ public class PhotoService extends ServiceWrapper {
     	//TODO: write file to photo_path
     	
     	//TODO: photoId is assigned and returned to client
-    	return Response.status(200).build();
     }
+    
+    
+ // save uploaded file to new location
+    private void writeToFile(InputStream uploadedInputStream, String uploadedFileLocation) throws Exception {
+        OutputStream out = new FileOutputStream(new File(uploadedFileLocation));
+        int read = 0;
+        byte[] bytes = new byte[1024];
+
+        out = new FileOutputStream(new File(uploadedFileLocation));
+        while ((read = uploadedInputStream.read(bytes)) != -1) {
+            out.write(bytes, 0, read);
+        }
+        out.flush();
+        out.close();
+    }
+
 }
