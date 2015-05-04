@@ -1,26 +1,17 @@
 package com.server;
 
-import java.io.InputStream;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
-import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
-import com.sun.jersey.multipart.FormDataParam;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
 
 @Path("/photos")
 public class PhotoService extends ServiceWrapper {
@@ -85,22 +76,10 @@ public class PhotoService extends ServiceWrapper {
 	
 //	private static final String SERVER_UPLOAD_LOCATION_FOLDER = "C:/Users/JingyuLiu/Desktop/xkito/";
 	
-    @POST
-    @Path("/{username}/{fileName}")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @PUT
+    @Path("/{user_id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response uploadPhoto(@PathParam("fileName") final String fileName,
-    		   @FormDataParam("content") final InputStream uploadedInputStream) {
-    	
-        String uploadedFileLocation = SERVER_UPLOAD_LOCATION_FOLDER + fileName;
-        // save it
-        try {
-            writeToFile(uploadedInputStream, uploadedFileLocation);
-        } catch(Exception e) {
-    		return Response.status(403).build(); 		
-        }
-		return Response.status(200).build(); 		
-        
+    public Photo uploadPhoto(@PathParam("user_id") String user_id) {
     	//TODO: verify user session
     	//TODO: update user-to-photo table, photo table
     	
@@ -108,21 +87,47 @@ public class PhotoService extends ServiceWrapper {
     	//TODO: write file to photo_path
     	
     	//TODO: photoId is assigned and returned to client
+    	
+    	CryptoGenerator crypto = new CryptoGenerator();
+    	Photo photo = new Photo();
+    	String photo_name = crypto.nextPhotoName();
+    	photo.setLocation(photo_name);
+    	String sqlQuery = String.format("INSERT INTO Photo(location) VALUES ('%s')",
+    			photo_name);
+    	try {
+        	createPhoto(photo, sqlQuery);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	return photo;        
     }
     
     
- // save uploaded file to new location
-    private void writeToFile(InputStream uploadedInputStream, String uploadedFileLocation) throws Exception {
-        OutputStream out = new FileOutputStream(new File(uploadedFileLocation));
-        int read = 0;
-        byte[] bytes = new byte[1024];
+    public void createPhoto(Photo photo, String query) {
+        try (
+                Connection connection = db.getConnection();
+                PreparedStatement statement = connection.prepareStatement(query,
+                                              Statement.RETURN_GENERATED_KEYS);
+            ) {
 
-        out = new FileOutputStream(new File(uploadedFileLocation));
-        while ((read = uploadedInputStream.read(bytes)) != -1) {
-            out.write(bytes, 0, read);
+                int affectedRows = statement.executeUpdate();
+
+                if (affectedRows == 0) {
+                    throw new SQLException("Creating user failed, no rows affected.");
+                }
+
+                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        photo.setPhotoId(generatedKeys.getString(1));
+                    }
+                    else {
+                        throw new SQLException("Creating user failed, no ID obtained.");
+                    }
+                }
+            }
+        catch(Exception e){
+        	e.printStackTrace();
         }
-        out.flush();
-        out.close();
     }
 
 }
