@@ -82,11 +82,8 @@ public class PhotoService extends ServiceWrapper {
     public Photo uploadPhoto(@PathParam("user_id") String user_id) {
     	//TODO: verify user session
     	//TODO: update user-to-photo table, photo table
-    	
-    	//String photo_path = null; //get path to store the photo
-    	//TODO: write file to photo_path
-    	
-    	//TODO: photoId is assigned and returned to client
+    	//IMPORTANT: write file to photo_path to S3 client side
+    	//DONE: photoId is assigned and returned to client
     	
     	CryptoGenerator crypto = new CryptoGenerator();
     	Photo photo = new Photo();
@@ -99,6 +96,16 @@ public class PhotoService extends ServiceWrapper {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+    	
+    	// Add user ownership
+    	sqlQuery = String.format("INSERT INTO UserToPhoto(user_id, photo_id) VALUES ('%s', '%s')", photo.getPhotoId(), user_id);
+    	try {
+    		Connection connection = db.getConnection();
+			PreparedStatement statement = connection.prepareStatement(sqlQuery);
+			statement.executeUpdate();
+		} catch(Exception e){
+        	e.printStackTrace();
+        }
     	return photo;        
     }
     
