@@ -14,12 +14,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 @Path("/sessions")
-public class SessionService {
-	Database db;
-	
-	public SessionService() {
-		db = Database.getInstance();
-	}
+public class SessionService extends ServiceWrapper {
 	
 	@GET
 	@Path("/{sessionId}")
