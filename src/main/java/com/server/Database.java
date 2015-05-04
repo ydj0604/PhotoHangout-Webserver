@@ -12,7 +12,7 @@ public class Database {
 	public static final String DB_URL = "jdbc:mysql://162.243.153.67:3306/PhotoHangout";
     public static final String DB_USER = "scriptor";
     public static final String DB_PASS = "obsecure";
-    private static Database instance;
+    private static Database instance = new Database(DB_URL, DB_USER, DB_PASS);
 	private Connection conn = null;	
 	
     private Database(String url, String user_name, String password) {
@@ -27,9 +27,6 @@ public class Database {
     }
     
     public static Database getInstance() {
-    	if(instance == null) {
-    		instance = new Database(DB_URL, DB_USER, DB_PASS);
-    	}
     	return instance;
     }
     
