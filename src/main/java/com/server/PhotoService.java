@@ -12,9 +12,13 @@ import javax.ws.rs.core.MediaType;
 
 import org.codehaus.jettison.json.JSONObject;
 
+import com.amazonaws.services.s3.AmazonS3;
+
 
 @Path("/photos")
 public class PhotoService extends ServiceWrapper {
+	
+	private AmazonS3 s3 = S3ServiceWrapper.getS3Instance();
 	
 	@GET
 	@Path("/{user_id}/{photo_id}")
@@ -28,7 +32,7 @@ public class PhotoService extends ServiceWrapper {
 				"SELECT location from Photo WHERE id = (SELECT photo_id FROM UserToPhoto WHERE user_id = '%s' AND photo_id = '%s');"
 				,user_id, photo_id);
 		ResultSet rs = null;
-		try {
+		try {	
 			rs = db.runSql(sqlQuery);
 			if(rs.next()) {
 				photo_path = rs.getString("location");
@@ -106,6 +110,8 @@ public class PhotoService extends ServiceWrapper {
 		} catch(Exception e){
         	e.printStackTrace();
         }
+    	
+    	
     	return photo;        
     }
     
