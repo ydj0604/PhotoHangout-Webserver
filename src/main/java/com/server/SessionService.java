@@ -33,7 +33,10 @@ public class SessionService extends ServiceWrapper {
 		
 		try {
 			rs = db.runSql("SELECT * FROM Session WHERE id=" + sessionId);
-			rs.next();
+			if(!rs.isBeforeFirst()) {
+				return null;
+			}
+			rs.next();			
 			resp = new Session(rs.getString("id"), rs.getString("owner_id"), rs.getString("photo_id"));
 			resp.setExpireTime(rs.getString("expire_time"));
 		} catch (SQLException e) {
@@ -41,6 +44,32 @@ public class SessionService extends ServiceWrapper {
 		}
 		
 		return resp;
+    }
+
+	@GET
+	@Path("/{sessionId}/photohash")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String getPhotoHashFromSession(@PathParam("sessionId") String sessionId) {
+		System.out.println("getSession: " + sessionId);
+		//TODO:verify with DB
+		
+		ResultSet rs = null;
+		String photoHash = null;
+		
+		try {
+			rs = db.runSql("SELECT * FROM Session WHERE id=" + sessionId);
+			if(!rs.isBeforeFirst()) {
+				return null;
+			}
+			rs.next();
+			String photoId = rs.getString("photo_id");
+			rs = db.runSql("SELECT * FROM Photo WHERE id=" + photoId);
+			photoHash = rs.getString("location");
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return photoHash;
     }
 	
     @POST
