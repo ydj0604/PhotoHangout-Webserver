@@ -154,7 +154,7 @@ public class SessionService extends ServiceWrapper {
 			e.printStackTrace();
 		}
 		System.out.println(jo.toString());
-		return "{"+jo.toString()+"}";
+		return jo.toString();
 	}
     
     
