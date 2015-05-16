@@ -32,6 +32,9 @@ public class AccountService extends ServiceWrapper {
 		
 		try {
 			rs = db.runSql(sqlQuery);
+			if(!rs.isBeforeFirst()) {
+				return null;
+			}
 			rs.next();
 			resp = new Account(username, rs.getString("password"));
 			resp.setUserId(rs.getString("id"));
