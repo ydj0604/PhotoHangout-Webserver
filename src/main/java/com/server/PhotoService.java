@@ -9,16 +9,17 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.codehaus.jettison.json.JSONObject;
 
-import com.amazonaws.services.s3.AmazonS3;
+//import com.amazonaws.services.s3.AmazonS3;
 
 
 @Path("/photos")
 public class PhotoService extends ServiceWrapper {
 	
-	private AmazonS3 s3 = S3ServiceWrapper.getS3Instance();
+//	private AmazonS3 s3 = S3ServiceWrapper.getS3Instance();
 	
 	@GET
 	@Path("/{user_id}/{photo_id}")
@@ -78,7 +79,6 @@ public class PhotoService extends ServiceWrapper {
 		return jo.toString();
 	}
 	
-//	private static final String SERVER_UPLOAD_LOCATION_FOLDER = "C:/Users/JingyuLiu/Desktop/xkito/";
 	
     @PUT
     @Path("/{user_id}")
@@ -95,52 +95,25 @@ public class PhotoService extends ServiceWrapper {
     	photo.setLocation(photo_name);
     	String sqlQuery = String.format("INSERT INTO Photo(location) VALUES ('%s')",
     			photo_name);
+    	Long id;
     	try {
-        	createPhoto(photo, sqlQuery);
+        	id = db.executeSql(sqlQuery);
+		} catch (Exception e) {
+			e.printStackTrace();
+			// please do not save
+			return photo; 
+		}
+    	photo.setPhotoId(id.toString());
+    	
+    	// Add user ownership
+    	sqlQuery = String.format("INSERT INTO UserToPhoto(user_id, photo_id) VALUES ('%s', '%s')",user_id, photo.getPhotoId());
+    	
+    	try {
+        	id = db.executeSql(sqlQuery);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-    	
-    	// Add user ownership
-    	sqlQuery = String.format("INSERT INTO UserToPhoto(user_id, photo_id) VALUES ('%s', '%s')", photo.getPhotoId(), user_id);
-    	try {
-    		Connection connection = db.getConnection();
-			PreparedStatement statement = connection.prepareStatement(sqlQuery);
-			statement.executeUpdate();
-		} catch(Exception e){
-        	e.printStackTrace();
-        }
-    	
-    	
+    	    	
     	return photo;        
     }
-    
-    
-    public void createPhoto(Photo photo, String query) {
-        try (
-                Connection connection = db.getConnection();
-                PreparedStatement statement = connection.prepareStatement(query,
-                                              Statement.RETURN_GENERATED_KEYS);
-            ) {
-
-                int affectedRows = statement.executeUpdate();
-
-                if (affectedRows == 0) {
-                    throw new SQLException("Creating user failed, no rows affected.");
-                }
-
-                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        photo.setPhotoId(generatedKeys.getString(1));
-                    }
-                    else {
-                        throw new SQLException("Creating user failed, no ID obtained.");
-                    }
-                }
-            }
-        catch(Exception e){
-        	e.printStackTrace();
-        }
-    }
-
 }
