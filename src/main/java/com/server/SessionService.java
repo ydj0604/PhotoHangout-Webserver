@@ -119,27 +119,21 @@ public class SessionService extends ServiceWrapper {
     @Path("/{sessionId}/accepted")
     @Produces(MediaType.APPLICATION_JSON)
     public String accepted(@PathParam("sessionId") String sessionId) {
-		System.out.println("JOIN STATS");
 
 	   	String sqlQuery = String.format(
 	   			"SELECT Distinct PhotoHangout.User.id, user_name, accepted from PhotoHangout.User inner join PhotoHangout.Invitation on PhotoHangout.User.id = receiver_id where SESSION_id = %s and accepted = 1;",
 	   			sessionId);
 		ResultSet rs = null;
-		System.out.println("JOIN STATS1");
 
 		String id = null;
 		String user_name = null;
 		String accepted = null;
-		System.out.println("JOIN STATS2");
 
 		JSONArray jo = new JSONArray();
-		System.out.println("JOIN STATS3");
 
 		try {
 			rs = db.runSql(sqlQuery);
-			System.out.println("JOIN STATS3.5");
 			while(rs.next()) {
-				System.out.println("JOIN STATS4");
 				id = rs.getString("id");
 				user_name = rs.getString("user_name");
 				accepted = rs.getString("accepted");
@@ -150,10 +144,8 @@ public class SessionService extends ServiceWrapper {
 				jo.put(col);
 				}
 		} catch (Exception e) {
-			System.out.println("JOIN STATS5");
 			e.printStackTrace();
 		}
-		System.out.println(jo.toString());
 		return jo.toString();
 	}
     
