@@ -53,16 +53,20 @@ public class SessionService extends ServiceWrapper {
 		//TODO:verify with DB
 		
 		ResultSet rs = null;
-		String photoHash = null;
+		String photoHash = "";
 		
 		try {
 			rs = db.runSql("SELECT * FROM Session WHERE id=" + sessionId);
 			if(!rs.isBeforeFirst()) {
-				return null;
+				return photoHash;
 			}
 			rs.next();
 			String photoId = rs.getString("photo_id");
 			rs = db.runSql("SELECT * FROM Photo WHERE id=" + photoId);
+			if(!rs.isBeforeFirst()) {
+				return photoHash;
+			}
+			rs.next();
 			photoHash = rs.getString("location");
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -149,19 +153,48 @@ public class SessionService extends ServiceWrapper {
 		return jo.toString();
 	}
     
-    
-    /*
     @PUT
-    @Path("/complete/{sessionId}")
+    @Path("/{sessionId}/complete")
     @Produces(MediaType.APPLICATION_JSON)
     public Response completeSession(@PathParam("sessionId") String sessionId) { //make calls to other services
     	System.out.println(sessionId);
     	
     	//TODO: mark the session expired in Session Table
-    	//TODO: mark all the corresponding invitations expired in Invitation Table
-    	//TODO: update User-To-Photo table so that collaborators get to keep the photo
+    	expireSession(sessionId);
     	
-    	return Response.status(201).build();
+    	//TODO: get photo Id
+    	Session sessionObj = getSession(sessionId);
+    	String photoId = sessionObj!=null? sessionObj.getPhotoId(): null;
+    	
+    	//TODO: mark all the corresponding invitations expired in Invitation Table
+    	try {
+	    	String sqlQueryInv = String.format("UPDATE Invitation SET expired_time= ? WHERE session_id=%s", sessionId);
+	    	db.executeSqlWithTimestamp(sqlQueryInv);
+    	} catch(Exception e) {
+    		e.printStackTrace();
+    	}
+    	
+    	//TODO: get ids of collaborators
+    	String sqlQueryInv2 = String.format("SELECT * FROM Invitation WHERE session_id=%s", sessionId);
+    	ResultSet rs = null;
+    	ArrayList<String> collaborators = new ArrayList<String>(); 
+    	try {
+    		rs = db.runSql(sqlQueryInv2);
+			while(rs.next()){
+				if(rs.getString("accepted") == "1") //add only the users who actually joined
+					collaborators.add(rs.getString("receiver_id"));
+			}
+    	} catch(Exception e) {
+    		e.printStackTrace();
+    	}
+    	
+    	//TODO: update User-To-Photo table so that collaborators get to keep the photo
+		for(int i=0; i<collaborators.size(); i++) {
+			String sqlQueryUP = String.format("INSERT INTO UserToPhoto(user_id, photo_id) VALUES (%s, %s)", collaborators.get(i), photoId);
+		}
+    	
+    	
+    	return Response.status(200).build();
     }
-    */
+    
 }
