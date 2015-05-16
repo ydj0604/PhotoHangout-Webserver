@@ -11,17 +11,23 @@ public class Invitation implements Serializable {
 	private String SessionId;
 	private String ReceiverId;
 	private Integer Accepted;
-	private Integer Expired;
+	private String ExpireTime;
 
 	public Invitation() {}
-	
-	public Invitation(String i, String s, String r, Integer a, Integer e) {
+
+	public Invitation(String i, String s, String r) {
 		InvitationId = i;
 		SessionId = s;
 		ReceiverId = r;
-		Accepted = a;
-		Expired = e;
-	}
+	}	
+	
+//	public Invitation(String i, String s, String r, Integer a, String e) {
+//		InvitationId = i;
+//		SessionId = s;
+//		ReceiverId = r;
+//		Accepted = a;
+//		Expired = e;
+//	}
 	
 	public void setInvitationId(String i) {
 		InvitationId = i;
@@ -55,18 +61,19 @@ public class Invitation implements Serializable {
 		return Accepted;
 	}
 	
-	public void setExpired(Integer e) {
-		Expired = e;
+	public void setExpireTime(String e) {
+		ExpireTime = e;
 	}
 	
-	public Integer getExpired() {
-		return Expired;
+	public String getExpireTime() {
+		return ExpireTime;
 	}
 	
 	@Override
 	public String toString() {
-		return "Invitation [invitationId=" + InvitationId + ", sessionId=" + SessionId
-				+ ", receiver=" + ReceiverId + ", accepted=" + Accepted.toString() + ", expired=" + Expired.toString() + "]";
+		//return "Invitation [invitationId=" + InvitationId + ", sessionId=" + SessionId
+		//		+ ", receiver=" + ReceiverId + ", accepted=" + Accepted.toString() + ", expired=" + Expired.toString() + "]";
+		return "";
 	}
 }
 
