@@ -119,7 +119,7 @@ public class SessionService extends ServiceWrapper {
     @GET
     @Path("/{sessionId}/joinstats")
     @Produces(MediaType.APPLICATION_JSON)
-    public String joinAccepted(@PathParam("sessionId") String sessionId) {
+    public String joinStats(@PathParam("sessionId") String sessionId) {
 	   	String sqlQuery = String.format(
 	   			"SELECT Distinct PhotoHangout.User.id, user_name, accepted from PhotoHangout.User inner join PhotoHangout.Invitation on PhotoHangout.User.id = receiver_id where SESSION_id = %s and accepted = 1;",
 	   			sessionId);
@@ -144,6 +144,7 @@ public class SessionService extends ServiceWrapper {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		System.out.println(jo.toString());
 		return jo.toString();
 	}
     
