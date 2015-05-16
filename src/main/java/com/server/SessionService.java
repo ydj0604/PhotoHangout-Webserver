@@ -13,6 +13,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.codehaus.jettison.json.JSONObject;
+
 @Path("/sessions")
 public class SessionService extends ServiceWrapper {
 	
@@ -80,6 +82,46 @@ public class SessionService extends ServiceWrapper {
     	
     	return Response.status(200).build();
     }
+    
+    
+    @GET
+    @Path("/{sessionId}/joinstats}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String joinStats(@PathParam("sessionId") String sessionId) {
+	   	String sqlQuery = String.format(
+	   			"SELECT Count(*) as total FROM PhotoHangout.Invitation WHERE SESSION_id = %s",
+	   			sessionId);
+		ResultSet rs = null;
+	
+		JSONObject jo = new JSONObject();
+	
+		int joined;
+		int total;
+		
+		try {
+			rs = db.runSql(sqlQuery);
+			total = Integer.parseInt(rs.getString("total"));
+			jo.put("total", total);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		rs = null;
+		jo = new JSONObject();
+		
+		sqlQuery = String.format(
+	   			"SELECT Count(*) as joined FROM PhotoHangout.Invitation WHERE SESSION_id = %s and accepted = 1" ,
+	   			sessionId);
+		try {
+			rs = db.runSql(sqlQuery);
+			joined = Integer.parseInt(rs.getString("joined"));
+			jo.put("joined", joined);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+				
+		return jo.toString();
+	}
     
     /*
     @PUT

@@ -136,4 +136,9 @@ public class AccountService extends ServiceWrapper {
     	
     	return Response.status(201).build();
     }
+    
+    
+    public boolean accessAllowed(String deviceId) {
+    	return true;
+    }
 }

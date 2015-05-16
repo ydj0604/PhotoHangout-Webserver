@@ -1,6 +1,7 @@
 package com.server;
 
 import java.sql.*;
+import java.util.ArrayList;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -58,8 +59,9 @@ public class PhotoService extends ServiceWrapper {
 		//TODO: return a json array of photo json objects
 		
 		String sqlQuery = String.format(
-				"SELECT id, location from Photo WHERE id = (SELECT photo_id FROM UserToPhoto WHERE user_id = '%s');"
+				"SELECT * from Photo WHERE id IN (SELECT photo_id FROM UserToPhoto WHERE user_id = '%s');"
 				,user_id);
+		
 		ResultSet rs = null;
 		String photo_id = null;
 		String photo_path = null;
