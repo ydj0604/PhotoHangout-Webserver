@@ -31,11 +31,18 @@ public class InvitationService extends ServiceWrapper {
 		ResultSet rs = null;
 		ArrayList<Invitation> resp = new ArrayList<>();
 		
-		String sqlQuery = String.format("SELECT * FROM Invitation WHERE receiver_id='%s'", username);
 		try {
-			rs = db.runSql(sqlQuery);
+			String sqlQueryUsr = String.format("SELECT * FROM User WHERE user_name='%s'", username);
+			rs = db.runSql(sqlQueryUsr);
 			if(!rs.isBeforeFirst()) {
-				return "{}";
+				return "{[]}";
+			}
+			rs.next();
+			String userid = rs.getString("id");
+			String sqlQueryInv = String.format("SELECT * FROM Invitation WHERE receiver_id=%s", userid);
+			rs = db.runSql(sqlQueryInv);
+			if(!rs.isBeforeFirst()) {
+				return "{[]}";
 			}
 			while(rs.next()){
 				Invitation temp = new Invitation(rs.getString("id"),rs.getString("session_id"),rs.getString("receiver_id"));
