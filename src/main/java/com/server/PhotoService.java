@@ -1,8 +1,14 @@
 package com.server;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.sql.*;
-import java.util.ArrayList;
 
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -11,8 +17,12 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 
 import org.codehaus.jettison.json.JSONObject;
+import org.glassfish.jersey.media.multipart.FormDataParam;
+
+import com.sun.jersey.core.header.FormDataContentDisposition;
 
 //import com.amazonaws.services.s3.AmazonS3;
 
@@ -21,6 +31,77 @@ import org.codehaus.jettison.json.JSONObject;
 public class PhotoService extends ServiceWrapper {
 	
 //	private AmazonS3 s3 = S3ServiceWrapper.getS3Instance();
+
+	@GET
+	@Path("/{username}/{photo_id}/direct")
+	@Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public Response getPhotoDirect(@PathParam("username") String username, @PathParam("photo_id") String photo_id) {
+		//TODO: verify user session
+		
+		//String photo_path = null; //TODO: get path from photo table
+
+	    StreamingOutput stream = new StreamingOutput() {
+	        @Override
+	        public void write(OutputStream output) throws IOException {
+	        	FileInputStream input = new FileInputStream("lion.jpeg");
+	        	try {
+	        		// TODO: write file content to output with photo_path
+	        		int bytes = 0;
+	        		while ((bytes = input.read()) != -1)
+	        			output.write(bytes);
+	        	} catch (Exception e) {
+	        	  	e.printStackTrace();
+	          	}
+	        	input.close();
+	        }
+	    };
+		
+	    return Response.ok(stream, "image/png") //TODO: set content-type of your file
+	            .header("content-disposition", "attachment; filename = "+ photo_id)
+	            .build();
+    }
+	
+    @POST
+    @Path("/{username}/direct")
+    //@Consumes(MediaType.APPLICATION_OCTET_STREAM)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    //public Response uploadPhotoDirect(@PathParam("username") String username, InputStream istream) {
+    public Response uploadPhotoDirect(@FormDataParam("data") InputStream istream,
+    								@FormDataParam("file") FormDataContentDisposition contentDispositionHeader,
+    								@PathParam("username") String username) {
+    	//TODO: verify user session
+    	//TODO: update user-to-photo table, photo table
+    	
+    	//String photo_path = null; //get path to store the photo
+    	//TODO: write file to photo_path
+    	
+    	//TODO: photoId is assigned and returned to client
+    	File ofile = null;
+    	OutputStream ofstream = null;
+    	System.out.println(username);
+    	
+    	try {
+    		ofile = new File("temp.jpeg");
+        	ofstream = new FileOutputStream(ofile);
+    		int numBytes = 0;
+    		byte[] bytes = new byte[1024];
+    		while ((numBytes = istream.read(bytes)) != -1) { 
+    			ofstream.write(bytes, 0, numBytes);
+    		}
+    	} catch(Exception e) {
+    		e.printStackTrace();
+    	} finally {
+    		try {
+				istream.close();
+				ofstream.flush();
+				ofstream.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+    	}
+    	
+    	return Response.status(200).build();
+    }
 	
 	@GET
 	@Path("/{user_id}/{photo_id}")
