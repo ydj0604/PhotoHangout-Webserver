@@ -2,6 +2,8 @@ package com.server;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -14,6 +16,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.codehaus.jettison.json.JSONObject;
+import org.json.JSONArray;
 
 @Path("/sessions")
 public class SessionService extends ServiceWrapper {
@@ -87,28 +90,34 @@ public class SessionService extends ServiceWrapper {
     @GET
     @Path("/{sessionId}/joinstats")
     @Produces(MediaType.APPLICATION_JSON)
-    public String joinStats(@PathParam("sessionId") String sessionId) {
+    public String joinAccepted(@PathParam("sessionId") String sessionId) {
 	   	String sqlQuery = String.format(
-	   			"SELECT * from PhotoHangout.User WHERE id IN ( SELECT receiver_id FROM PhotoHangout.Invitation WHERE SESSION_id = %s)",
+	   			"SELECT Distinct PhotoHangout.User.id, user_name, accepted from PhotoHangout.User inner join PhotoHangout.Invitation on PhotoHangout.User.id = receiver_id where SESSION_id = %s and accepted = 1;",
 	   			sessionId);
 		ResultSet rs = null;
 	
 		String id = null;
 		String user_name = null;
-		JSONObject jo = new JSONObject();
-
+		String accepted = null;
+		JSONArray jo = new JSONArray();
 		try {
 			rs = db.runSql(sqlQuery);
 			while(rs.next()) {
 				id = rs.getString("id");
 				user_name = rs.getString("user_name");
-				jo.put(id, user_name);
+				accepted = rs.getString("accepted");
+				HashMap<String, String> col = new HashMap<String, String> ();
+				col.put("id", id);
+				col.put("user_name",user_name);
+				col.put("accepted",accepted);
+				jo.put(col);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return jo.toString();
 	}
+    
     
     /*
     @PUT
