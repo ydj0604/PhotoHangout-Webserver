@@ -11,7 +11,7 @@ public class Photo implements Serializable {
 	 * 
 	 */
 	private String PhotoId;
-	private String Location; //path
+	private String Location; //hash
 
 	public Photo() {}
 	

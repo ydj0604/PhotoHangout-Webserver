@@ -54,7 +54,7 @@ public class AccountService extends ServiceWrapper {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response updateAccount(@PathParam("username") String username, Account account) {
-		String sqlQuery = "UPDATE User SET "; // user_name='%s', password='%s', email= WHERE id=%s", sessionId);
+		String sqlQuery = "UPDATE User SET ";
 		ArrayList<String> fieldArr = new ArrayList<String>();
 		ArrayList<String> valueArr = new ArrayList<String>();
 		

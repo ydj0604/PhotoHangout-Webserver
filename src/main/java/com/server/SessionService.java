@@ -172,28 +172,36 @@ public class SessionService extends ServiceWrapper {
 	    	db.executeSqlWithTimestamp(sqlQueryInv);
     	} catch(Exception e) {
     		e.printStackTrace();
+    		return null;
     	}
     	
-    	//TODO: get ids of collaborators
-    	String sqlQueryInv2 = String.format("SELECT * FROM Invitation WHERE session_id=%s", sessionId);
+    	//TODO: get ids of collaborators who accepted the invitations
+    	String sqlQueryInv2 = String.format("SELECT * FROM Invitation WHERE session_id=%s and accepted=%s", sessionId, "1"); //1 means accpeted
     	ResultSet rs = null;
-    	ArrayList<String> collaborators = new ArrayList<String>(); 
+    	ArrayList<String> collaboratorIds = new ArrayList<String>(); 
     	try {
     		rs = db.runSql(sqlQueryInv2);
 			while(rs.next()){
 				if(rs.getString("accepted") == "1") //add only the users who actually joined
-					collaborators.add(rs.getString("receiver_id"));
+					collaboratorIds.add(rs.getString("receiver_id"));
 			}
     	} catch(Exception e) {
     		e.printStackTrace();
+    		return null;
     	}
     	
     	//TODO: update User-To-Photo table so that collaborators get to keep the photo
-		for(int i=0; i<collaborators.size(); i++) {
-			String sqlQueryUP = String.format("INSERT INTO UserToPhoto(user_id, photo_id) VALUES (%s, %s)", collaborators.get(i), photoId);
+		for(int i=0; i<collaboratorIds.size(); i++) {
+			String sqlQueryUTP = String.format("INSERT INTO UserToPhoto(user_id, photo_id) VALUES (%s, %s)", collaboratorIds.get(i), photoId);
+			
+			try {
+				db.executeSql(sqlQueryUTP);
+			} catch (SQLException e) {
+				e.printStackTrace();
+				return null;
+			}
 		}
-    	
-    	
+		
     	return Response.status(200).build();
     }
     

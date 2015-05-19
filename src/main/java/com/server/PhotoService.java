@@ -29,21 +29,59 @@ import com.sun.jersey.core.header.FormDataContentDisposition;
 
 @Path("/photos")
 public class PhotoService extends ServiceWrapper {
-	
-//	private AmazonS3 s3 = S3ServiceWrapper.getS3Instance();
 
 	@GET
-	@Path("/{username}/{photo_id}/direct")
-	@Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public Response getPhotoDirect(@PathParam("username") String username, @PathParam("photo_id") String photo_id) {
+	@Path("/{username}/{photo_id}")
+	@Produces("image/jpeg")
+    public Response getPhotoDirect(@PathParam("username") String username, @PathParam("photo_id") String photoId) {
 		//TODO: verify user session
+	
+    	System.out.println("get photo direct for " + username);
+    	
+    	//get user id from username
+		String sqlQueryUsr = String.format("SELECT * FROM User WHERE user_name='%s'", username);
+		ResultSet rs;
+		String userId = null;
+		try {
+			rs = db.runSql(sqlQueryUsr);
+			if(!rs.isBeforeFirst()) { //invalid username
+				return null;
+			}
+			rs.next();
+			userId = rs.getString("id");
+		} catch (SQLException e1) {
+			e1.printStackTrace();
+			return null;
+		}
 		
-		//String photo_path = null; //TODO: get path from photo table
-
+		//get photo hash from photoId
+		String photoHash = null;
+		String sqlQueryPhoto = String.format("SELECT * FROM Photo WHERE id='%s'", photoId);
+		try {
+			rs = db.runSql(sqlQueryPhoto);
+			if(!rs.isBeforeFirst()) { //invalid username
+				return null;
+			}
+			rs.next();
+			photoHash = rs.getString("location");
+		} catch (SQLException e1) {
+			e1.printStackTrace();
+			return null;
+		}
+		
+		//check the photo storage directory
+		File dir = new File("Photos");
+    	if(!dir.exists())
+    		return null;
+    	
+    	//temporarily only support jpeg img
+    	final String requestedFilePath = dir.getAbsolutePath() + "/" + userId + "_" + photoHash + ".jpeg";
+		
+		//provide an image
 	    StreamingOutput stream = new StreamingOutput() {
 	        @Override
 	        public void write(OutputStream output) throws IOException {
-	        	FileInputStream input = new FileInputStream("lion.jpeg");
+	        	FileInputStream input = new FileInputStream(requestedFilePath);
 	        	try {
 	        		// TODO: write file content to output with photo_path
 	        		int bytes = 0;
@@ -55,33 +93,75 @@ public class PhotoService extends ServiceWrapper {
 	        	input.close();
 	        }
 	    };
-		
-	    return Response.ok(stream, "image/png") //TODO: set content-type of your file
-	            .header("content-disposition", "attachment; filename = "+ photo_id)
-	            .build();
-    }
+	    return Response.ok(stream).type("image/jpeg").build();
+	}
 	
     @POST
-    @Path("/{username}/direct")
-    //@Consumes(MediaType.APPLICATION_OCTET_STREAM)
+    @Path("{username}/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    //public Response uploadPhotoDirect(@PathParam("username") String username, InputStream istream) {
-    public Response uploadPhotoDirect(@FormDataParam("data") InputStream istream,
+    @Produces(MediaType.APPLICATION_JSON)
+    public Photo uploadPhotoDirect(@FormDataParam("data") InputStream istream,
     								@FormDataParam("file") FormDataContentDisposition contentDispositionHeader,
     								@PathParam("username") String username) {
+    	
     	//TODO: verify user session
-    	//TODO: update user-to-photo table, photo table
+    	//System.out.println(contentDispositionHeader.getFileName());
+    	System.out.println("upload photo direct for " + username);
+
+    	//get user id from username
+		String sqlQueryUsr = String.format("SELECT * FROM User WHERE user_name='%s'", username);
+		ResultSet rs;
+		String userId = null;
+		try {
+			rs = db.runSql(sqlQueryUsr);
+			if(!rs.isBeforeFirst()) { //invalid username
+				return null;
+			}
+			rs.next();
+			userId = rs.getString("id");
+		} catch (SQLException e1) {
+			e1.printStackTrace();
+			return null;
+		}
     	
-    	//String photo_path = null; //get path to store the photo
-    	//TODO: write file to photo_path
-    	
-    	//TODO: photoId is assigned and returned to client
-    	File ofile = null;
-    	OutputStream ofstream = null;
-    	System.out.println(username);
+		//generate hash for new photo and create photo POJO
+    	CryptoGenerator crypto = CryptoGenerator.getInstance();
+    	Photo newPhoto = new Photo();
+    	String newPhotoHash = crypto.nextPhotoName();
+    	newPhoto.setLocation(newPhotoHash);
+    	String sqlQuery = String.format("INSERT INTO Photo(location) VALUES ('%s')",
+    			newPhotoHash);
+    	Long newPhotoId;
     	
     	try {
-    		ofile = new File("temp.jpeg");
+    		newPhotoId = db.executeSql(sqlQuery);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+    	newPhoto.setPhotoId(newPhotoId.toString());
+    	
+    	//add user ownership
+    	sqlQuery = String.format("INSERT INTO UserToPhoto(user_id, photo_id) VALUES ('%s', '%s')",userId, newPhoto.getPhotoId());
+    	try {
+        	db.executeSql(sqlQuery);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}    	
+    	
+    	//now upload the actual file
+    	File dir = new File("Photos");
+    	if(!dir.exists())
+    		dir.mkdir(); //make a directory to store photos
+    	
+    	File ofile = null;
+    	OutputStream ofstream = null;
+    	//temporarily only support jpeg img
+    	String newFilePath = dir.getAbsolutePath() + "/" + userId + "_" + newPhotoHash + ".jpeg";
+    	
+    	try {
+    		ofile = new File(newFilePath);
         	ofstream = new FileOutputStream(ofile);
     		int numBytes = 0;
     		byte[] bytes = new byte[1024];
@@ -90,6 +170,7 @@ public class PhotoService extends ServiceWrapper {
     		}
     	} catch(Exception e) {
     		e.printStackTrace();
+    		return null;
     	} finally {
     		try {
 				istream.close();
@@ -100,34 +181,8 @@ public class PhotoService extends ServiceWrapper {
 			}
     	}
     	
-    	return Response.status(200).build();
-    }
-	
-	@GET
-	@Path("/{user_id}/{photo_id}")
-	@Produces(MediaType.APPLICATION_JSON)
-    public Photo getPhoto(@PathParam("user_id") String user_id, @PathParam("photo_id") String photo_id) {
-		//TODO: verify user session
-		Photo resp = null;
-		String photo_path = null;
-
-		String sqlQuery = String.format(
-				"SELECT location from Photo WHERE id = (SELECT photo_id FROM UserToPhoto WHERE user_id = '%s' AND photo_id = '%s');"
-				,user_id, photo_id);
-		ResultSet rs = null;
-		try {	
-			rs = db.runSql(sqlQuery);
-			if(rs.next()) {
-				photo_path = rs.getString("location");
-				resp = new Photo(photo_id, photo_path);
-				System.out.printf("Verified user %s has access to photo %s at location: %s\n", user_id, photo_id, photo_path);
-			} else {
-				System.out.printf("Denied user %s has access to photo %s at location: %s\n", user_id, photo_id, photo_path);
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return resp;
+    	return newPhoto;
+    	//return Response.ok(200).build();
     }
 
 	@GET
@@ -136,8 +191,6 @@ public class PhotoService extends ServiceWrapper {
     public String getPhotosIds(@PathParam("user_id") String user_id) {
 		System.out.println(user_id);
 		//TODO: verify user session
-		//TODO: get photo ids of user by scanning photo user-to-photo table
-		//TODO: return a json array of photo json objects
 		
 		String sqlQuery = String.format(
 				"SELECT * from Photo WHERE id IN (SELECT photo_id FROM UserToPhoto WHERE user_id = '%s');"
@@ -161,42 +214,100 @@ public class PhotoService extends ServiceWrapper {
 		}
 		return jo.toString();
 	}
+
 	
-	
-    @PUT
-    @Path("/{user_id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Photo uploadPhoto(@PathParam("user_id") String user_id) {
-    	//TODO: verify user session
-    	//TODO: update user-to-photo table, photo table
-    	//IMPORTANT: write file to photo_path to S3 client side
-    	//DONE: photoId is assigned and returned to client
-    	
-    	CryptoGenerator crypto = new CryptoGenerator();
-    	Photo photo = new Photo();
-    	String photo_name = crypto.nextPhotoName();
-    	photo.setLocation(photo_name);
-    	String sqlQuery = String.format("INSERT INTO Photo(location) VALUES ('%s')",
-    			photo_name);
-    	Long id;
-    	try {
-        	id = db.executeSql(sqlQuery);
-		} catch (Exception e) {
-			e.printStackTrace();
-			// please do not save
-			return photo; 
-		}
-    	photo.setPhotoId(id.toString());
-    	
-    	// Add user ownership
-    	sqlQuery = String.format("INSERT INTO UserToPhoto(user_id, photo_id) VALUES ('%s', '%s')",user_id, photo.getPhotoId());
-    	
-    	try {
-        	id = db.executeSql(sqlQuery);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-    	    	
-    	return photo;        
-    }
+//	@GET
+//	@Path("/{user_id}/{photo_id}")
+//	@Produces(MediaType.APPLICATION_JSON)
+//    public Photo getPhoto(@PathParam("user_id") String user_id, @PathParam("photo_id") String photo_id) {
+//		//TODO: verify user session
+//		Photo resp = null;
+//		String photo_path = null;
+//
+//		String sqlQuery = String.format(
+//				"SELECT location from Photo WHERE id = (SELECT photo_id FROM UserToPhoto WHERE user_id = '%s' AND photo_id = '%s');"
+//				,user_id, photo_id);
+//		ResultSet rs = null;
+//		try {	
+//			rs = db.runSql(sqlQuery);
+//			if(rs.next()) {
+//				photo_path = rs.getString("location");
+//				resp = new Photo(photo_id, photo_path);
+//				System.out.printf("Verified user %s has access to photo %s at location: %s\n", user_id, photo_id, photo_path);
+//			} else {
+//				System.out.printf("Denied user %s has access to photo %s at location: %s\n", user_id, photo_id, photo_path);
+//			}
+//		} catch (SQLException e) {
+//			e.printStackTrace();
+//		}
+//		return resp;
+//    }
+//	@GET
+//	@Path("/{username}/{photo_id}/direct")
+//	@Produces(MediaType.APPLICATION_OCTET_STREAM)
+//    public Response getPhotoDirect(@PathParam("username") String username, @PathParam("photo_id") String photo_id) {
+//		//TODO: verify user session
+//		
+//		//String photo_path = null; //TODO: get path from photo table
+//		System.out.println("get photo direct for " + username);
+//		
+//	    StreamingOutput stream = new StreamingOutput() {
+//	        @Override
+//	        public void write(OutputStream output) throws IOException {
+//	        	FileInputStream input = new FileInputStream("lion.jpeg");
+//	        	try {
+//	        		// TODO: write file content to output with photo_path
+//	        		int bytes = 0;
+//	        		while ((bytes = input.read()) != -1)
+//	        			output.write(bytes);
+//	        	} catch (Exception e) {
+//	        	  	e.printStackTrace();
+//	          	}
+//	        	input.close();
+//	        }
+//	    };
+//		
+//	    return Response.ok(stream, "image/png") //TODO: set content-type of your file
+//	            .header("content-disposition", "attachment; filename = "+ photo_id)
+//	            .build();
+//    }
+//	
+//    @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+//    public Response uploadPhotoDirect(@PathParam("username") String username, InputStream istream)
+//    @PUT
+//    @Path("/{user_id}")
+//    @Produces(MediaType.APPLICATION_JSON)
+//    public Photo uploadPhoto(@PathParam("user_id") String user_id) {
+//    	//TODO: verify user session
+//    	//TODO: update user-to-photo table, photo table
+//    	//IMPORTANT: write file to photo_path to S3 client side
+//    	//DONE: photoId is assigned and returned to client
+//    	
+//    	CryptoGenerator crypto = new CryptoGenerator();
+//    	Photo photo = new Photo();
+//    	String photo_name = crypto.nextPhotoName();
+//    	photo.setLocation(photo_name);
+//    	String sqlQuery = String.format("INSERT INTO Photo(location) VALUES ('%s')",
+//    			photo_name);
+//    	Long id;
+//    	try {
+//        	id = db.executeSql(sqlQuery);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//			// please do not save
+//			return photo; 
+//		}
+//    	photo.setPhotoId(id.toString());
+//    	
+//    	// Add user ownership
+//    	sqlQuery = String.format("INSERT INTO UserToPhoto(user_id, photo_id) VALUES ('%s', '%s')",user_id, photo.getPhotoId());
+//    	
+//    	try {
+//        	id = db.executeSql(sqlQuery);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//    	    	
+//    	return photo;        
+//    }
 }
