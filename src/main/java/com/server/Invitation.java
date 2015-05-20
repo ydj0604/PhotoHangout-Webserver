@@ -12,6 +12,8 @@ public class Invitation implements Serializable {
 	private String ReceiverId;
 	private Integer Accepted;
 	private String ExpireTime;
+	private String photoId;
+	private String hostId;
 
 	public Invitation() {}
 
@@ -69,11 +71,20 @@ public class Invitation implements Serializable {
 		return ExpireTime;
 	}
 	
-	@Override
-	public String toString() {
-		//return "Invitation [invitationId=" + InvitationId + ", sessionId=" + SessionId
-		//		+ ", receiver=" + ReceiverId + ", accepted=" + Accepted.toString() + ", expired=" + Expired.toString() + "]";
-		return "";
+	public void setPhotoId(String p) {
+		photoId = p;
+	}
+	
+	public String getPhotoId() {
+		return photoId;
+	}
+	
+	public void setHostId(String h) {
+		hostId = h;
+	}
+	
+	public String getHostId() {
+		return hostId;
 	}
 }
 

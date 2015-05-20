@@ -44,6 +44,7 @@ public class AccountService extends ServiceWrapper {
 				resp.setToken(rs.getString("token"));
 		} catch (SQLException e) {
 			e.printStackTrace();
+			return null;
 		}
     	
     	return resp;
@@ -126,7 +127,10 @@ public class AccountService extends ServiceWrapper {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response createAccount(Account account) {    
+    public Response createAccount(Account account) {
+    	if(account.getUsername().length() < 4 || account.getPassword().length() < 4) //at least 4 char-long
+    		return null;
+    	
     	String sqlQuery = String.format("INSERT INTO User(user_name, password, email) VALUES ('%s', '%s', '%s')",
     			account.getUsername(), account.getPassword(), account.getEmail()==null? "": account.getEmail());
     	   	
@@ -138,10 +142,5 @@ public class AccountService extends ServiceWrapper {
 		}
     	
     	return Response.status(201).build();
-    }
-    
-    
-    public boolean accessAllowed(String deviceId) {
-    	return true;
     }
 }

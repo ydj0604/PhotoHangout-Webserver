@@ -51,10 +51,5 @@ public class Session implements Serializable {
 	public String getExpireTime() {
 		return ExpireTime;
 	}
-	
-	@Override
-	public String toString() {
-		return "Session [sessionId=" + SessionId + ", owner=" + OwnerId + ", photoId=" + PhotoId + ", expired=" + ExpireTime + "]";
-	}
 }
 

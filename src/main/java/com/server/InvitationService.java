@@ -23,10 +23,7 @@ public class InvitationService extends ServiceWrapper {
 	@Path("/{username}")
     @Produces(MediaType.APPLICATION_JSON)
     public String getInvitations(@PathParam("username") String username) {
-		System.out.println(username);
-		
-		//TODO: get invitations to the user (of username)
-		//TODO: return a list of invitation json objects
+		System.out.println("get invitations for " + username);
 		
 		ResultSet rs = null;
 		ArrayList<Invitation> resp = new ArrayList<>();
@@ -102,19 +99,46 @@ public class InvitationService extends ServiceWrapper {
     @Path("/{invitationId}/accept")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response acceptInvitation(@PathParam("invitationId") String invitationId) {
+    public Invitation acceptInvitation(@PathParam("invitationId") String invitationId) {
     	System.out.println("accept invitation: " + invitationId);
     	Integer accept = new Integer(1);
     	String sqlQuery = String.format("UPDATE Invitation SET accepted=%s WHERE id=%s", accept.toString(), invitationId);
     	
+    	//mark accepted
     	try {
     		db.executeSql(sqlQuery);
+    		
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return Response.status(404).build();
+			return null;
 		}
     	
-    	return Response.status(200).build();
+    	//get photo id corresponding to the session
+    	String photoId = null;
+    	String sessionId = null;
+    	String hostId = null;
+    	String sqlQueryJoin = String.format("SELECT * FROM Session as S, Invitation as I WHERE I.id=%s and S.id=I.session_id", invitationId);
+    	ResultSet rs = null;
+    	try {
+    		rs = db.runSql(sqlQueryJoin);
+			if(!rs.isBeforeFirst()) {
+				return null;
+			}
+			rs.next();
+			photoId = rs.getString("S.photo_id");
+			sessionId = rs.getString("S.id");
+			hostId = rs.getString("S.owner_id");
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+    	
+    	Invitation resp = new Invitation(invitationId, sessionId, null);
+    	resp.setPhotoId(photoId);
+    	resp.setAccepted(accept);
+    	resp.setHostId(hostId);
+    	
+    	return resp;
     }
     
 }
