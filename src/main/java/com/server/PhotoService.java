@@ -107,7 +107,7 @@ public class PhotoService extends ServiceWrapper {
     								@PathParam("username") String username) {
     	
     	//TODO: verify user session
-    	System.out.println(contentDispositionHeader.getFileName());
+    	//System.out.println(contentDispositionHeader.getFileName());
     	System.out.println("upload photo direct for " + username);
 
     	//get user id from username
