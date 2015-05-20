@@ -15,6 +15,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import com.amazonaws.util.json.JSONArray;
+import com.sun.jersey.api.NotFoundException;
 
 
 @Path("/invitations")
@@ -32,14 +33,14 @@ public class InvitationService extends ServiceWrapper {
 			String sqlQueryUsr = String.format("SELECT * FROM User WHERE user_name='%s'", username);
 			rs = db.runSql(sqlQueryUsr);
 			if(!rs.isBeforeFirst()) {
-				return "[]";
+				throw new NotFoundException();
 			}
 			rs.next();
 			String userid = rs.getString("id");
 			String sqlQueryInv = String.format("SELECT * FROM Invitation WHERE receiver_id=%s", userid);
 			rs = db.runSql(sqlQueryInv);
 			if(!rs.isBeforeFirst()) {
-				return "[]";
+				throw new NotFoundException();
 			}
 			while(rs.next()){
 				Invitation temp = new Invitation(rs.getString("id"),rs.getString("session_id"),rs.getString("receiver_id"));
@@ -47,6 +48,7 @@ public class InvitationService extends ServiceWrapper {
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
+			throw new NotFoundException();
 		}
     	JSONArray jsonArray = new JSONArray(resp);
 		return jsonArray.toString();
@@ -57,7 +59,7 @@ public class InvitationService extends ServiceWrapper {
     @Produces(MediaType.APPLICATION_JSON)
     public Invitation createInvitation(Invitation invitation) {
     	System.out.println("create invitation: " + invitation);
-    	    	
+    	
     	String sess_id = invitation.getSessionId();
     	String rcvr_id = invitation.getReceiverId();
     	Integer accepted = new Integer(0);
@@ -69,6 +71,7 @@ public class InvitationService extends ServiceWrapper {
 			generatedInvId = db.executeSql(sqlQuery);
 		} catch (SQLException e) {
 			e.printStackTrace();
+			throw new NotFoundException();
 		}
     	
     	Invitation resp = null;
@@ -107,10 +110,9 @@ public class InvitationService extends ServiceWrapper {
     	//mark accepted
     	try {
     		db.executeSql(sqlQuery);
-    		
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return null;
+			throw new NotFoundException();
 		}
     	
     	//get photo id corresponding to the session
@@ -122,7 +124,7 @@ public class InvitationService extends ServiceWrapper {
     	try {
     		rs = db.runSql(sqlQueryJoin);
 			if(!rs.isBeforeFirst()) {
-				return null;
+				throw new NotFoundException();
 			}
 			rs.next();
 			photoId = rs.getString("S.photo_id");
@@ -130,7 +132,7 @@ public class InvitationService extends ServiceWrapper {
 			hostId = rs.getString("S.owner_id");
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return null;
+			throw new NotFoundException();
 		}
     	
     	Invitation resp = new Invitation(invitationId, sessionId, null);

@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -14,7 +15,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import com.amazonaws.util.json.JSONArray;
 import com.server.Account;
+import com.sun.jersey.api.NotFoundException;
 
 /**
  * Root resource (exposed at "myresource" path)
@@ -23,9 +26,40 @@ import com.server.Account;
 public class AccountService extends ServiceWrapper {
 	
 	@GET
+	@Path("/{username}/friends")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String getFriendsAccount(@PathParam("username") String username) {
+		System.out.println("get friends account for " + username);
+		
+		ResultSet rs = null;
+		ArrayList<Account> resp = new ArrayList<>();
+		
+		try {
+			String sqlQueryUsr = String.format("SELECT * FROM User");
+			rs = db.runSql(sqlQueryUsr);
+			while(rs.next()){
+				String friendId = rs.getString("id");
+				String friendUsername = rs.getString("user_name");
+				String friendEmail = rs.getString("email");
+				Account friendAccount = new Account(friendUsername, null);
+				friendAccount.setUserId(friendId);
+				friendAccount.setEmail(friendEmail);
+				resp.add(friendAccount);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			throw new NotFoundException();
+		}
+    	JSONArray jsonArray = new JSONArray(resp);
+		return jsonArray.toString();
+	}
+	
+	@GET
 	@Path("/{username}")
     @Produces(MediaType.APPLICATION_JSON)
     public Account getAccount(@PathParam("username") String username) {
+		System.out.println("get account for " + username);
+		
 		ResultSet rs = null;
 		Account resp = null;
 		String sqlQuery = String.format("SELECT * FROM User WHERE user_name='%s'", username);
@@ -33,7 +67,7 @@ public class AccountService extends ServiceWrapper {
 		try {
 			rs = db.runSql(sqlQuery);
 			if(!rs.isBeforeFirst()) {
-				return null;
+				throw new NotFoundException();
 			}
 			rs.next();
 			resp = new Account(username, rs.getString("password"));
@@ -44,7 +78,7 @@ public class AccountService extends ServiceWrapper {
 				resp.setToken(rs.getString("token"));
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return null;
+			throw new NotFoundException();
 		}
     	
     	return resp;
@@ -55,6 +89,8 @@ public class AccountService extends ServiceWrapper {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response updateAccount(@PathParam("username") String username, Account account) {
+		System.out.println("update account for " + username);
+		
 		String sqlQuery = "UPDATE User SET ";
 		ArrayList<String> fieldArr = new ArrayList<String>();
 		ArrayList<String> valueArr = new ArrayList<String>();
@@ -85,9 +121,8 @@ public class AccountService extends ServiceWrapper {
 				temp += curr;
 			}
 		}
-		sqlQuery += temp + " WHERE user_name='" + username + "'";
 		
-		System.out.println(sqlQuery);
+		sqlQuery += temp + " WHERE user_name='" + username + "'";
 		
     	try {
 			db.executeSql(sqlQuery);
@@ -99,11 +134,14 @@ public class AccountService extends ServiceWrapper {
 	}
 	
 	
+	
 	@POST
 	@Path("/login")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response requestLogin(Account account) {
+		System.out.println("request login for " + account.getUsername());
+		
 		String sqlQuery = String.format("SELECT password FROM User WHERE user_name='%s'", account.getUsername());
 		ResultSet rs = null;
 		boolean verified = false;
@@ -128,8 +166,10 @@ public class AccountService extends ServiceWrapper {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response createAccount(Account account) {
+    	System.out.println("create account " + account.getUsername());
+    	
     	if(account.getUsername().length() < 4 || account.getPassword().length() < 4) //at least 4 char-long
-    		return null;
+    		throw new ForbiddenException();
     	
     	String sqlQuery = String.format("INSERT INTO User(user_name, password, email) VALUES ('%s', '%s', '%s')",
     			account.getUsername(), account.getPassword(), account.getEmail()==null? "": account.getEmail());

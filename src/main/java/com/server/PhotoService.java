@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.*;
+import java.util.ArrayList;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -22,6 +23,8 @@ import javax.ws.rs.core.StreamingOutput;
 import org.codehaus.jettison.json.JSONObject;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
+import com.amazonaws.util.json.JSONArray;
+import com.sun.jersey.api.NotFoundException;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 
 //import com.amazonaws.services.s3.AmazonS3;
@@ -36,7 +39,7 @@ public class PhotoService extends ServiceWrapper {
     public Response getPhotoDirect(@PathParam("username") String username, @PathParam("photo_id") String photoId) {
 		//TODO: verify user session
 	
-    	System.out.println("get photo direct for " + username);
+    	System.out.println("get photo direct for " + photoId);
     	
     	//get user id from username
 		String sqlQueryUsr = String.format("SELECT * FROM User WHERE user_name='%s'", username);
@@ -45,13 +48,13 @@ public class PhotoService extends ServiceWrapper {
 		try {
 			rs = db.runSql(sqlQueryUsr);
 			if(!rs.isBeforeFirst()) { //invalid username
-				return null;
+				throw new NotFoundException();
 			}
 			rs.next();
 			userId = rs.getString("id");
 		} catch (SQLException e1) {
 			e1.printStackTrace();
-			return null;
+			throw new NotFoundException();
 		}
 		
 		//get photo hash from photoId
@@ -60,19 +63,19 @@ public class PhotoService extends ServiceWrapper {
 		try {
 			rs = db.runSql(sqlQueryPhoto);
 			if(!rs.isBeforeFirst()) { //invalid username
-				return null;
+				throw new NotFoundException();
 			}
 			rs.next();
 			photoHash = rs.getString("location");
 		} catch (SQLException e1) {
 			e1.printStackTrace();
-			return null;
+			throw new NotFoundException();
 		}
 		
 		//check the photo storage directory
 		File dir = new File("Photos");
     	if(!dir.exists())
-    		return null;
+    		throw new NotFoundException();
     	
     	//temporarily only support jpeg img
     	final String requestedFilePath = dir.getAbsolutePath() + "/" + userId + "_" + photoHash + ".jpeg";
@@ -83,7 +86,6 @@ public class PhotoService extends ServiceWrapper {
 	        public void write(OutputStream output) throws IOException {
 	        	FileInputStream input = new FileInputStream(requestedFilePath);
 	        	try {
-	        		// TODO: write file content to output with photo_path
 	        		int bytes = 0;
 	        		while ((bytes = input.read()) != -1)
 	        			output.write(bytes);
@@ -105,7 +107,7 @@ public class PhotoService extends ServiceWrapper {
     								@PathParam("username") String username) {
     	
     	//TODO: verify user session
-    	//System.out.println(contentDispositionHeader.getFileName());
+    	System.out.println(contentDispositionHeader.getFileName());
     	System.out.println("upload photo direct for " + username);
 
     	//get user id from username
@@ -115,13 +117,13 @@ public class PhotoService extends ServiceWrapper {
 		try {
 			rs = db.runSql(sqlQueryUsr);
 			if(!rs.isBeforeFirst()) { //invalid username
-				return null;
+				throw new NotFoundException();
 			}
 			rs.next();
 			userId = rs.getString("id");
 		} catch (SQLException e1) {
 			e1.printStackTrace();
-			return null;
+			throw new NotFoundException();
 		}
     	
 		//generate hash for new photo and create photo POJO
@@ -137,7 +139,7 @@ public class PhotoService extends ServiceWrapper {
     		newPhotoId = db.executeSql(sqlQuery);
 		} catch (Exception e) {
 			e.printStackTrace();
-			return null;
+			throw new NotFoundException();
 		}
     	newPhoto.setPhotoId(newPhotoId.toString());
     	
@@ -147,7 +149,7 @@ public class PhotoService extends ServiceWrapper {
         	db.executeSql(sqlQuery);
 		} catch (Exception e) {
 			e.printStackTrace();
-			return null;
+			throw new NotFoundException();
 		}    	
     	
     	//now upload the actual file
@@ -182,37 +184,55 @@ public class PhotoService extends ServiceWrapper {
     	}
     	
     	return newPhoto;
-    	//return Response.ok(200).build();
     }
 
 	@GET
-	@Path("/{user_id}/photo-ids")
+	@Path("/{username}/all")
 	@Produces("application/json")
-    public String getPhotosIds(@PathParam("user_id") String user_id) {
-		System.out.println(user_id);
+    public String getPhotos(@PathParam("username") String username) {
+		System.out.println("get photo ids of " + username);
 		//TODO: verify user session
+		
+		//get user id from username
+		String userId = null;
+		String sqlQueryUsr = String.format("SELECT * FROM User WHERE user_name='%s'", username);
+		ResultSet rs;
+		try {
+			rs = db.runSql(sqlQueryUsr);
+			if(!rs.isBeforeFirst()) { //invalid username
+				throw new NotFoundException();
+			}
+			rs.next();
+			userId = rs.getString("id");
+		} catch (SQLException e1) {
+			e1.printStackTrace();
+			throw new NotFoundException();
+		}
 		
 		String sqlQuery = String.format(
 				"SELECT * from Photo WHERE id IN (SELECT photo_id FROM UserToPhoto WHERE user_id = '%s');"
-				,user_id);
+				,userId);
 		
-		ResultSet rs = null;
+		rs = null;
 		String photo_id = null;
 		String photo_path = null;
-		JSONObject jo = new JSONObject();
+		ArrayList<Photo> photoArr = new ArrayList<>();
 
 		try {
 			rs = db.runSql(sqlQuery);
 			while(rs.next()) {
 				photo_id = rs.getString("id");
 				photo_path = rs.getString("location");
-				jo.put(photo_id, photo_path);
-				System.out.printf("Verified user %s has access to photo %s at location: %s\n", user_id, photo_id, photo_path);
+				Photo temp = new Photo(photo_id, photo_path);
+				photoArr.add(temp);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new NotFoundException();
 		}
-		return jo.toString();
+		
+		JSONArray resp = new JSONArray(photoArr);
+		return resp.toString();
 	}
 
 	

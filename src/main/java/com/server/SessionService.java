@@ -16,6 +16,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import com.amazonaws.util.json.JSONArray;
+import com.sun.jersey.api.NotFoundException;
 
 @Path("/sessions")
 public class SessionService extends ServiceWrapper {
@@ -24,7 +25,7 @@ public class SessionService extends ServiceWrapper {
 	@Path("/{sessionId}")
     @Produces(MediaType.APPLICATION_JSON)
     public Session getSession(@PathParam("sessionId") String sessionId) {
-		System.out.println("getSession: " + sessionId);
+		System.out.println("get session for session#" + sessionId);
 		//TODO:verify with DB
 		
 		ResultSet rs = null;		
@@ -35,11 +36,12 @@ public class SessionService extends ServiceWrapper {
 			if(!rs.isBeforeFirst()) {
 				return null;
 			}
-			rs.next();			
+			rs.next();
 			resp = new Session(rs.getString("id"), rs.getString("owner_id"), rs.getString("photo_id"));
 			resp.setExpireTime(rs.getString("expire_time"));
 		} catch (SQLException e) {
 			e.printStackTrace();
+			throw new NotFoundException();
 		}
 		
 		return resp;
@@ -49,27 +51,28 @@ public class SessionService extends ServiceWrapper {
 	@Path("/{sessionId}/photohash")
     @Produces(MediaType.APPLICATION_JSON)
     public String getPhotoHashFromSession(@PathParam("sessionId") String sessionId) {
-		System.out.println("getSession: " + sessionId);
+		System.out.println("get photo hash for session#" + sessionId);
 		//TODO:verify with DB
 		
 		ResultSet rs = null;
-		String photoHash = "";
+		String photoHash = null;
 		
 		try {
 			rs = db.runSql("SELECT * FROM Session WHERE id=" + sessionId);
 			if(!rs.isBeforeFirst()) {
-				return photoHash;
+				throw new NotFoundException();
 			}
 			rs.next();
 			String photoId = rs.getString("photo_id");
 			rs = db.runSql("SELECT * FROM Photo WHERE id=" + photoId);
 			if(!rs.isBeforeFirst()) {
-				return photoHash;
+				throw new NotFoundException();
 			}
 			rs.next();
 			photoHash = rs.getString("location");
 		} catch (SQLException e) {
 			e.printStackTrace();
+			throw new NotFoundException();
 		}
 		
 		return photoHash;
@@ -82,7 +85,6 @@ public class SessionService extends ServiceWrapper {
     	System.out.println("create session: " + session);
     	
     	Session resp = null;
-    	//TODO: session id is assigned here and returned to client
     	String owner_id = session.getOwnerId();
     	String photo_id = session.getPhotoId();
     	String sqlQuery = String.format("INSERT INTO Session(owner_id, photo_id) VALUES ('%s', '%s')", owner_id, photo_id);
@@ -92,6 +94,7 @@ public class SessionService extends ServiceWrapper {
 			generatedSessionId = db.executeSql(sqlQuery);
 		} catch (SQLException e) {
 			e.printStackTrace();
+			throw new NotFoundException();
 		}
     	
     	resp = new Session(generatedSessionId.toString(), owner_id, photo_id);
@@ -104,7 +107,7 @@ public class SessionService extends ServiceWrapper {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response expireSession(@PathParam("sessionId") String sessionId) {
-    	System.out.println("expire session: " + sessionId);
+    	System.out.println("expire session#" + sessionId);
     	
     	String sqlQuery = String.format("UPDATE Session SET expire_time= ? WHERE id=%s", sessionId);
     	
@@ -122,10 +125,11 @@ public class SessionService extends ServiceWrapper {
     @GET
     @Path("/{sessionId}/accepted")
     @Produces(MediaType.APPLICATION_JSON)
-    public String accepted(@PathParam("sessionId") String sessionId) {
-
+    public String getInvitees(@PathParam("sessionId") String sessionId) {
+    	System.out.println("get invitees for session#" + sessionId);
+    	
 	   	String sqlQuery = String.format(
-	   			"SELECT Distinct PhotoHangout.User.id, user_name, accepted from PhotoHangout.User inner join PhotoHangout.Invitation on PhotoHangout.User.id = receiver_id where SESSION_id = %s and accepted = 1;",
+	   			"SELECT Distinct PhotoHangout.User.id, user_name, accepted from PhotoHangout.User inner join PhotoHangout.Invitation on PhotoHangout.User.id = receiver_id where SESSION_id = %s",
 	   			sessionId);
 		ResultSet rs = null;
 
@@ -138,17 +142,18 @@ public class SessionService extends ServiceWrapper {
 		try {
 			rs = db.runSql(sqlQuery);
 			while(rs.next()) {
-				id = rs.getString("id");
-				user_name = rs.getString("user_name");
-				accepted = rs.getString("accepted");
-				HashMap<String, String> col = new HashMap<String, String> ();
-				col.put("id", id);
-				col.put("user_name",user_name);
-				col.put("accepted",accepted);
-				jo.put(col);
+					id = rs.getString("id");
+					user_name = rs.getString("user_name");
+					accepted = rs.getString("accepted");
+					HashMap<String, String> col = new HashMap<String, String> ();
+					col.put("id", id);
+					col.put("user_name",user_name);
+					col.put("accepted",accepted);
+					jo.put(col);
 				}
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new NotFoundException();
 		}
 		return jo.toString();
 	}
@@ -157,7 +162,7 @@ public class SessionService extends ServiceWrapper {
     @Path("/{sessionId}/complete")
     @Produces(MediaType.APPLICATION_JSON)
     public Response completeSession(@PathParam("sessionId") String sessionId) { //make calls to other services
-    	System.out.println("complete session: " + sessionId);
+    	System.out.println("complete session#" + sessionId);
     	
     	//TODO: mark the session expired in Session Table
     	expireSession(sessionId);
@@ -172,7 +177,7 @@ public class SessionService extends ServiceWrapper {
 	    	db.executeSqlWithTimestamp(sqlQueryInv);
     	} catch(Exception e) {
     		e.printStackTrace();
-    		return null;
+    		throw new NotFoundException();
     	}
     	
     	//TODO: get ids of collaborators who accepted the invitations
@@ -189,7 +194,7 @@ public class SessionService extends ServiceWrapper {
 			}
     	} catch(Exception e) {
     		e.printStackTrace();
-    		return null;
+    		throw new NotFoundException();
     	}
     	
     	//TODO: update User-To-Photo table so that collaborators get to keep the photo
@@ -199,7 +204,7 @@ public class SessionService extends ServiceWrapper {
 				db.executeSql(sqlQueryUTP);
 			} catch (SQLException e) {
 				e.printStackTrace();
-				return null;
+				throw new NotFoundException();
 			}
 		}
 		
