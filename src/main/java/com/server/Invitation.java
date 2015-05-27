@@ -14,6 +14,7 @@ public class Invitation implements Serializable {
 	private String ExpireTime;
 	private String photoId;
 	private String hostId;
+	private String hostName;
 
 	public Invitation() {}
 
@@ -85,6 +86,14 @@ public class Invitation implements Serializable {
 	
 	public String getHostId() {
 		return hostId;
+	}
+	
+	public void setHostName(String h) {
+		hostName = h;
+	}
+	
+	public String getHostName() {
+		return hostName;
 	}
 }
 

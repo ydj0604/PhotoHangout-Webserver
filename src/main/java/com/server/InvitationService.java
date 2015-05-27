@@ -35,7 +35,7 @@ public class InvitationService extends ServiceWrapper {
 		ArrayList<Invitation> resp = new ArrayList<>();
 		
 		try {
-			String sqlQueryUsr = String.format("SELECT * FROM User WHERE user_name='%s'", username);
+			String sqlQueryUsr = String.format("SELECT * FROM  User WHERE user_name='%s'", username);
 			rs = db.runSql(sqlQueryUsr);
 			if(!rs.isBeforeFirst()) {
 				throw new NotFoundException();
@@ -43,13 +43,29 @@ public class InvitationService extends ServiceWrapper {
 			rs.next();
 			String userid = rs.getString("id");
 			// Select not accepted invitations
-			String sqlQueryInv = String.format("SELECT * FROM Invitation WHERE receiver_id=%s AND accepted=0", userid);
+			String sqlQueryInv = String.format("SELECT * FROM Invitation, Session as S WHERE Invitation.session_id = S.id and receiver_id=%s AND accepted=0 AND expired_time is null", userid);
 			rs = db.runSql(sqlQueryInv);
 			if(!rs.isBeforeFirst()) {
 				throw new NotFoundException();
 			}
 			while(rs.next()){
 				Invitation temp = new Invitation(rs.getString("id"),rs.getString("session_id"),rs.getString("receiver_id"));
+				String hostname = null;
+		    	String sqlQuerySelect = String.format("SELECT user_name FROM User WHERE id=%s", rs.getString("owner_id"));
+				ResultSet namers = null;
+
+		    	try {
+		    		namers = db.runSql(sqlQuerySelect);
+					if(!namers.isBeforeFirst()) {
+						throw new NotFoundException();
+					}
+					namers.next();
+					hostname = namers.getString("user_name");
+				} catch (SQLException e) {
+					e.printStackTrace();
+					throw new NotFoundException();
+				}
+		    	temp.setHostName(hostname);
 				resp.add(temp);
 			}
 		} catch (SQLException e) {
@@ -158,11 +174,26 @@ public class InvitationService extends ServiceWrapper {
 			throw new NotFoundException();
 		}
     	
+    	String hostname = null;
+    	sqlQueryJoin = String.format("SELECT user_name FROM User WHERE id=%s", hostId);
+    	rs = null;
+    	try {
+    		rs = db.runSql(sqlQueryJoin);
+			if(!rs.isBeforeFirst()) {
+				throw new NotFoundException();
+			}
+			rs.next();
+			hostname = rs.getString("user_name");
+		} catch (SQLException e) {
+			e.printStackTrace();
+			throw new NotFoundException();
+		}
+    	
     	Invitation resp = new Invitation(invitationId, sessionId, null);
     	resp.setPhotoId(photoId);
     	resp.setAccepted(accept);
     	resp.setHostId(hostId);
-    	
+    	resp.setHostName(hostname);
     	return resp;
     }
     
