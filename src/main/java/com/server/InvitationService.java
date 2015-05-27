@@ -20,6 +20,11 @@ import com.sun.jersey.api.NotFoundException;
 
 @Path("/invitations")
 public class InvitationService extends ServiceWrapper {
+	/**
+	 * return a list of invitations unaccepted by username
+	 * @param username
+	 * @return
+	 */
 	@GET
 	@Path("/{username}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -37,7 +42,8 @@ public class InvitationService extends ServiceWrapper {
 			}
 			rs.next();
 			String userid = rs.getString("id");
-			String sqlQueryInv = String.format("SELECT * FROM Invitation WHERE receiver_id=%s", userid);
+			// Select not accepted invitations
+			String sqlQueryInv = String.format("SELECT * FROM Invitation WHERE receiver_id=%s AND accepted=0", userid);
 			rs = db.runSql(sqlQueryInv);
 			if(!rs.isBeforeFirst()) {
 				throw new NotFoundException();
@@ -54,6 +60,12 @@ public class InvitationService extends ServiceWrapper {
 		return jsonArray.toString();
     }
 	
+	
+	/**
+	 * Create a invitation
+	 * @param invitation
+	 * @return
+	 */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -79,6 +91,12 @@ public class InvitationService extends ServiceWrapper {
     	return resp;
     }
     
+    
+    /**
+     * Update a invitation to be expired
+     * @param invitationId
+     * @return
+     */
     @PUT
     @Path("/{invitationId}/expire")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -98,9 +116,14 @@ public class InvitationService extends ServiceWrapper {
     	return Response.status(200).build();
     }
 
+    
+    /**
+     * Accept a invitation with id, mark accepted, return invitation object.
+     * @param invitationId
+     * @return
+     */
     @PUT
     @Path("/{invitationId}/accept")
-    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Invitation acceptInvitation(@PathParam("invitationId") String invitationId) {
     	System.out.println("accept invitation: " + invitationId);

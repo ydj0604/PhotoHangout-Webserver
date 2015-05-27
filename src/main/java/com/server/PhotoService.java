@@ -33,6 +33,12 @@ import com.sun.jersey.core.header.FormDataContentDisposition;
 @Path("/photos")
 public class PhotoService extends ServiceWrapper {
 
+	/**
+	 * return the photo owned by username with photo_id
+	 * @param username
+	 * @param photoId
+	 * @return
+	 */
 	@GET
 	@Path("/{username}/{photo_id}")
 	@Produces("image/jpeg")
@@ -98,6 +104,14 @@ public class PhotoService extends ServiceWrapper {
 	    return Response.ok(stream).type("image/jpeg").build();
 	}
 	
+	
+	/**
+	 * Upload a photo under username
+	 * @param istream
+	 * @param contentDispositionHeader
+	 * @param username
+	 * @return
+	 */
     @POST
     @Path("{username}/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)

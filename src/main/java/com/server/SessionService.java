@@ -158,6 +158,7 @@ public class SessionService extends ServiceWrapper {
 		return jo.toString();
 	}
     
+    
     @PUT
     @Path("/{sessionId}/complete")
     @Produces(MediaType.APPLICATION_JSON)
