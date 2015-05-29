@@ -40,30 +40,31 @@ public class PhotoService extends ServiceWrapper {
 	 * @return
 	 */
 	@GET
-	@Path("/{username}/{photo_id}")
+	@Path("/{photo_id}")
 	@Produces("image/jpeg")
     public Response getPhotoDirect(@PathParam("username") String username, @PathParam("photo_id") String photoId) {
 		//TODO: verify user session
 	
     	System.out.println("get photo direct for " + photoId);
     	
-    	//get user id from username
-		String sqlQueryUsr = String.format("SELECT * FROM User WHERE user_name='%s'", username);
-		ResultSet rs;
-		String userId = null;
-		try {
-			rs = db.runSql(sqlQueryUsr);
-			if(!rs.isBeforeFirst()) { //invalid username
-				throw new NotFoundException();
-			}
-			rs.next();
-			userId = rs.getString("id");
-		} catch (SQLException e1) {
-			e1.printStackTrace();
-			throw new NotFoundException();
-		}
+//    	//get user id from username
+//		String sqlQueryUsr = String.format("SELECT * FROM User WHERE user_name='%s'", username);
+//		ResultSet rs;
+//		String userId = null;
+//		try {
+//			rs = db.runSql(sqlQueryUsr);
+//			if(!rs.isBeforeFirst()) { //invalid username
+//				throw new NotFoundException();
+//			}
+//			rs.next();
+//			userId = rs.getString("id");
+//		} catch (SQLException e1) {
+//			e1.printStackTrace();
+//			throw new NotFoundException();
+//		}
 		
 		//get photo hash from photoId
+    	ResultSet rs;
 		String photoHash = null;
 		String sqlQueryPhoto = String.format("SELECT * FROM Photo WHERE id='%s'", photoId);
 		try {
@@ -84,7 +85,7 @@ public class PhotoService extends ServiceWrapper {
     		throw new NotFoundException();
     	
     	//temporarily only support jpeg img
-    	final String requestedFilePath = dir.getAbsolutePath() + "/" + userId + "_" + photoHash + ".jpeg";
+    	final String requestedFilePath = dir.getAbsolutePath() + "/" + photoHash + ".jpeg";
 		
 		//provide an image
 	    StreamingOutput stream = new StreamingOutput() {
@@ -174,7 +175,7 @@ public class PhotoService extends ServiceWrapper {
     	File ofile = null;
     	OutputStream ofstream = null;
     	//temporarily only support jpeg img
-    	String newFilePath = dir.getAbsolutePath() + "/" + userId + "_" + newPhotoHash + ".jpeg";
+    	String newFilePath = dir.getAbsolutePath() + "/" + newPhotoHash + ".jpeg";
     	
     	try {
     		ofile = new File(newFilePath);
