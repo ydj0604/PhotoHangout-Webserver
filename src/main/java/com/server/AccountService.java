@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -182,5 +183,23 @@ public class AccountService extends ServiceWrapper {
 		}
     	
     	return Response.status(201).build();
+    }
+    
+    //DELETE FROM `PhotoHangout`.`User` WHERE `id`='33';
+    @DELETE
+    @Path("/{username}")
+    public Response deleteAccount(@PathParam("username") String username) {
+    	System.out.println("delete account " + username);
+    	
+    	String sqlQuery = String.format("DELETE FROM User WHERE user_name='%s'", username);
+    	   	
+    	try {
+			db.executeSql(sqlQuery);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return Response.status(403).build();
+		}
+    	
+    	return Response.status(200).build();
     }
 }
