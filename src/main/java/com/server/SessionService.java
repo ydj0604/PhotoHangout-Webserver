@@ -107,15 +107,16 @@ public class SessionService extends ServiceWrapper {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateSession(Session session, @PathParam("sessionId") String sessionId) {
-    	System.out.println("expire session#" + sessionId);
+    	System.out.println("update session#" + sessionId);
     	
     	if(session.getPhotoId() == "" || session.getPhotoId() == null)
     		return Response.status(403).build();
     	
     	String sqlQuery = String.format("UPDATE Session SET photo_id=%s WHERE id=%s", session.getPhotoId(), sessionId);
+    	System.out.println(sqlQuery);
     	
     	try {
-			db.executeSqlWithTimestamp(sqlQuery);
+			db.executeSql(sqlQuery);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			return Response.status(404).build();

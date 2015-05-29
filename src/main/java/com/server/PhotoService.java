@@ -123,7 +123,7 @@ public class PhotoService extends ServiceWrapper {
     	//TODO: verify user session
     	//System.out.println(contentDispositionHeader.getFileName());
     	System.out.println("upload photo direct for " + username);
-
+    	{}
     	//get user id from username
 		String sqlQueryUsr = String.format("SELECT * FROM User WHERE user_name='%s'", username);
 		ResultSet rs;
